@@ -1,4 +1,4 @@
-# url-shorter
+# url-shortener
 
 
 Backend: Python 3.11+, FastAPI
