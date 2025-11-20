@@ -40,7 +40,7 @@ dependencies = [
 ]
 
 [tool.ruff]
-line-length = 90
+line-length = 92
 target-version = "py311"
 
 exclude = [

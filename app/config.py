@@ -31,6 +31,8 @@ class ApplicationSettings(BaseSettings):
     MAX_REQUESTS: int = 1000
     MAX_REQUESTS_JITTER: int = 100
 
+    BASE_URL: str = 'http://localhost:8000'
+
     @field_validator('ENVIRONMENT')
     def validate_environment(cls, v):
         allowed = ['development', 'staging', 'production']
