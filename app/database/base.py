@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, ClassVar
 
 from sqlalchemy import inspect
@@ -21,8 +21,8 @@ class Base(DeclarativeBase):
         created_at: Mapped[datetime] = mapped_column(
             default=datetime.utcnow, nullable=False
         )
-        updated_at: Mapped[datetime] = mapped_column(
-            default=datetime.utcnow,
+        expired_at: Mapped[datetime] = mapped_column(
+            default=lambda: datetime.utcnow() + timedelta(days=1),
             onupdate=datetime.utcnow,
             nullable=False,
         )
