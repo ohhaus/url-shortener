@@ -1,4 +1,5 @@
-from pydantic import BaseSettings, PostgresDsn, field_validator
+from pydantic import field_validator
+from pydantic_settings import BaseSettings
 
 
 class DatabaseSettings(BaseSettings):
@@ -32,6 +33,7 @@ class ApplicationSettings(BaseSettings):
     MAX_REQUESTS_JITTER: int = 100
 
     BASE_URL: str = 'http://localhost:8000'
+    SHORT_CODE_LENGTH: int = 6
 
     @field_validator('ENVIRONMENT')
     def validate_environment(cls, v):

@@ -7,8 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shortener.exceptions import (
     ShortCodeAlreadyExists,
-    ShortURLExpired,
-    ShortURLInactive,
     ShortURLNotFound,
 )
 from app.shortener.models import ShortURL
@@ -36,7 +34,6 @@ class ShortURLService:
 
         session.add(short_url)
         await session.commit()
-        await session.refresh(short_url)
 
         return short_url
 
@@ -51,12 +48,6 @@ class ShortURLService:
         if not short_url:
             raise ShortURLNotFound(f'Short URL with code "{short_code}" not found')
 
-        if not short_url.is_active:
-            raise ShortURLInactive(f'Short URL "{short_code}" is deactivated')
-
-        if short_url.is_expired:
-            raise ShortURLExpired(f'Short URL "{short_code}" has expired')
-
         return short_url
 
     @staticmethod
@@ -69,36 +60,18 @@ class ShortURLService:
     async def _generate_unique_code(session: AsyncSession) -> str:
         """Генерирует уникальный короткий код."""
         alphabet = string.ascii_letters + string.digits
-        attempts = 0
-        max_attempts = 100
+        return ''.join(secrets.choice(alphabet) for _ in range(settings.app.SHORT_CODE_LENGTH))
 
-        while attempts < max_attempts:
-            code = ''.join(secrets.choice(alphabet) for _ in range(settings.app.SHORT_CODE_LENGTH))
-
-            if not await ShortURLService._is_code_exists(session, code):
-                return code
-
-            attempts += 1
-
-        raise RuntimeError(f'Could not generate unique code after {max_attempts} attempts')
 
     @staticmethod
     async def increment_clicks(session: AsyncSession, short_url: ShortURL) -> None:
         """Увеличивает счетчик кликов."""
         short_url.clicks += 1
         await session.commit()
-
+    
     @staticmethod
-    def create_short_url_response(short_url: ShortURL, base_url: str) -> dict:
-        """Создает ответ с короткой ссылкой."""
-        return {
-            'id': short_url.id,
-            'short_code': short_url.short_code,
-            'original_url': short_url.original_url,
-            'short_url': f'{base_url}/{short_url.short_code}',
-            'clicks': short_url.clicks,
-            'created_at': short_url.created_at,
-            'expired_at': short_url.expired_at,
-            'is_active': short_url.is_active,
-            'is_expired': short_url.is_expired,
-        }
+    async def delete_short_url(session: AsyncSession, short_url: ShortURL) -> None:
+        await session.delete(short_url)
+        await session.commit()
+
+        return short_url
