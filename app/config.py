@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 class DatabaseSettings(BaseSettings):
     """Настройки базы данных."""
 
-    URL: str = 'sqlite+aiosqlite:///./url_shorter.db'  # поменять на PostgresDsn
+    URL: str = 'postgresql+asyncpg://postgres:postgres@localhost:5432/postgres'
     POOL_TIMEOUT: int = 30
     POOL_RECYCLE: int = 1800
     POOL_SIZE: int = 20

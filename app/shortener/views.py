@@ -14,7 +14,7 @@ from app.shortener.schemas import (
 from app.shortener.services import ShortURLService
 
 
-router = APIRouter(prefix='/shorten', tags=['Shorten'])
+router = APIRouter()
 
 
 @router.post('/', response_model=ShortURLResponse)
@@ -41,7 +41,7 @@ async def redirect_to_original(
 ):
     """Перенаправляет по короткой ссылке."""
     await ShortURLService.increment_clicks(session, short_url)
-    return RedirectResponse(url=short_url.original_url)
+    return RedirectResponse(url=short_url.original_url, status_code=status.HTTP_302_FOUND)
 
 
 @router.get('/{short_code}/info', response_model=ShortURLResponse)

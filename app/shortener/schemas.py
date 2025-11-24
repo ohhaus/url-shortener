@@ -22,7 +22,6 @@ class ShortURLCreate(BaseModel):
 class ShortURLResponse(BaseModel):
     short_code: str
     original_url: str
-    short_url: str
     clicks: int
 
     class Config:

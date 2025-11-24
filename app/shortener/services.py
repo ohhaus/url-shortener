@@ -34,6 +34,7 @@ class ShortURLService:
 
         session.add(short_url)
         await session.commit()
+        await session.refresh(short_url)
 
         return short_url
 

@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.sessions import get_async_session
-from app.shortener.exceptions import ShortURLExpired, ShortURLInactive, ShortURLNotFound
+from app.shortener.exceptions import ShortURLNotFound
 from app.shortener.services import ShortURLService
 
 
