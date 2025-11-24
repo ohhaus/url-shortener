@@ -12,6 +12,7 @@ from app.shortener.exceptions import (
     ShortURLNotFound,
 )
 from app.shortener.models import ShortURL
+from app.config import settings
 
 
 class ShortURLService:
@@ -65,17 +66,14 @@ class ShortURLService:
         return result.scalar_one_or_none() is not None
 
     @staticmethod
-    async def _generate_unique_code(
-        session: AsyncSession, min_length: int = 6, max_length: int = 10
-    ) -> str:
-        """Генерирует уникальный короткий код случайной длины."""
+    async def _generate_unique_code(session: AsyncSession) -> str:
+        """Генерирует уникальный короткий код."""
         alphabet = string.ascii_letters + string.digits
         attempts = 0
         max_attempts = 100
 
         while attempts < max_attempts:
-            length = random.randint(min_length, max_length)
-            code = ''.join(secrets.choice(alphabet) for _ in range(length))
+            code = ''.join(secrets.choice(alphabet) for _ in range(settings.app.SHORT_CODE_LENGTH))
 
             if not await ShortURLService._is_code_exists(session, code):
                 return code
