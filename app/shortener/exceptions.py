@@ -14,4 +14,3 @@ class ShortURLNotFound(ShortURLError):
 
 class ShortCodeAlreadyExists(ShortURLError):
     """Код уже существует."""
-    pass

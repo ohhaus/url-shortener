@@ -2,7 +2,6 @@ import secrets
 import string
 
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shortener.exceptions import (
