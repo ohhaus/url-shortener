@@ -26,7 +26,6 @@ async def create_short_url(
         short_url = await ShortURLService.create_short_url(
             session=session,
             original_url=data.original_url,
-            short_code=data.short_code,
         )
         return ShortURLResponse.model_validate(short_url)
 

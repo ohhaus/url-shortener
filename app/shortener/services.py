@@ -1,37 +1,32 @@
-import random
 import secrets
 import string
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shortener.exceptions import (
-    ShortCodeAlreadyExists,
     ShortURLNotFound,
 )
 from app.shortener.models import ShortURL
 from app.config import settings
-
+from app.shortener.decorators import retry_on_integrity_error
 
 class ShortURLService:
     """Сервис для работы с короткими ссылками."""
 
     @staticmethod
+    @retry_on_integrity_error(max_attempts=settings.app.MAX_ATTEMPTS)
     async def create_short_url(
-        session: AsyncSession, original_url: str, short_code: str | None = None
+        session: AsyncSession, original_url: str
     ) -> ShortURL:
         """Создает короткую ссылку."""
-        if short_code:
-            if await ShortURLService._is_code_exists(session, short_code):
-                raise ShortCodeAlreadyExists(f'Short code "{short_code}" already exists')
-        else:
-            short_code = await ShortURLService._generate_unique_code(session)
 
+        short_code = await ShortURLService._generate_unique_code(session)
         short_url = ShortURL(
             original_url=str(original_url),
             short_code=short_code,
         )
-
         session.add(short_url)
         await session.commit()
         await session.refresh(short_url)

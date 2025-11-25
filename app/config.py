@@ -34,6 +34,7 @@ class ApplicationSettings(BaseSettings):
 
     BASE_URL: str = 'http://localhost:8000'
     SHORT_CODE_LENGTH: int = 6
+    MAX_ATTEMPTS: int = 3
 
     @field_validator('ENVIRONMENT')
     def validate_environment(cls, v):
