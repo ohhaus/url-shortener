@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Type, Callable, Any
+from typing import Any, Callable
 
 from sqlalchemy.exc import IntegrityError
 
@@ -8,7 +8,7 @@ from app.shortener.exceptions import ShortCodeAlreadyExists
 
 def retry_on_integrity_error(
     max_attempts: int = 3,
-    exceptions: Type[Exception] = IntegrityError
+    exceptions: type[Exception] = IntegrityError
 ):
     """Декоратор для повторных попыток генерации."""
     def decorator(func: Callable) -> Callable:
@@ -17,9 +17,9 @@ def retry_on_integrity_error(
             for attempt in range(1, max_attempts + 1):
                 try:
                     return await func(*args, **kwargs)
-                except:
+                except exceptions as err:
                     if attempt == max_attempts:
-                        raise ShortCodeAlreadyExists
+                        raise ShortCodeAlreadyExists from err
             return None
         return wrapper
     return decorator

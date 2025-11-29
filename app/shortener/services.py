@@ -4,12 +4,13 @@ import string
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
+from app.shortener.decorators import retry_on_integrity_error
 from app.shortener.exceptions import (
     ShortURLNotFound,
 )
 from app.shortener.models import ShortURL
-from app.config import settings
-from app.shortener.decorators import retry_on_integrity_error
+
 
 class ShortURLService:
     """Сервис для работы с короткими ссылками."""
@@ -63,7 +64,7 @@ class ShortURLService:
         """Увеличивает счетчик кликов."""
         short_url.clicks += 1
         await session.commit()
-    
+
     @staticmethod
     async def delete_short_url(session: AsyncSession, short_url: ShortURL) -> None:
         await session.delete(short_url)

@@ -44,23 +44,24 @@ dependencies = [
 ]
 
 [tool.ruff]
-line-length = 92
+line-length = 95
 target-version = "py311"
 
 exclude = [
     ".venv",
     ".git",
+    ".vscode",
     "__pycache__",
     "build",
     "tests",
     "dist",
-    "migrations",
     "docs",
     "scripts",
     "setup_for_postman.py",
     "pytest.ini",
     "pyproject.toml",
-    "versions"
+    "versions",
+    "revisions",
 ]
 
 select = [

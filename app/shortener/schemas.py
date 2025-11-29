@@ -1,4 +1,5 @@
-from pydantic import BaseModel, HttpUrl, ConfigDict
+from pydantic import BaseModel, ConfigDict, HttpUrl
+
 
 class ShortURLCreate(BaseModel):
     """Схема для создания короткой ссылки."""

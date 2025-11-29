@@ -6,7 +6,7 @@ class DatabaseSettings(BaseSettings):
     """Настройки базы данных."""
 
     URL: str = 'postgresql+asyncpg://postgres:postgres@localhost:5432/postgres'
-    TEST_URL: str = 'sqlite+aiosqlite:///./test.db'
+    TEST_URL: str = 'sqlite+aiosqlite:///:memory:'
     POOL_TIMEOUT: int = 30
     POOL_RECYCLE: int = 1800
     POOL_SIZE: int = 20
