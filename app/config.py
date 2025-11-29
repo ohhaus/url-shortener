@@ -1,11 +1,12 @@
 from pydantic import field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DatabaseSettings(BaseSettings):
     """Настройки базы данных."""
 
     URL: str = 'postgresql+asyncpg://postgres:postgres@localhost:5432/postgres'
+    TEST_URL: str = 'sqlite+aiosqlite:///./test.db'
     POOL_TIMEOUT: int = 30
     POOL_RECYCLE: int = 1800
     POOL_SIZE: int = 20
@@ -13,10 +14,11 @@ class DatabaseSettings(BaseSettings):
     POOL_PING: bool = True
     ECHO_SQL: bool = False
 
-    class Config:
-        env_prefix = 'DATABASE_'
-        env_file = '.env'
-        env_file_encoding = 'utf-8'
+    model_config = SettingsConfigDict(
+        env_prefix = 'DATABASE_',
+        env_file = '.env',
+        env_file_encoding = 'utf-8',
+    )
 
 
 class ApplicationSettings(BaseSettings):
@@ -43,10 +45,11 @@ class ApplicationSettings(BaseSettings):
             raise ValueError(f'ENVIRONMENT должен быть одним из: {allowed}')
         return v
 
-    class Config:
-        env_prefix = 'APP_'
-        env_file = '.env'
-        env_file_encoding = 'utf-8'
+    model_config = SettingsConfigDict(
+        env_prefix = 'APP_',
+        env_file = '.env',
+        env_file_encoding = 'utf-8',
+    )
 
 
 class LoggingSettings(BaseSettings):
@@ -55,10 +58,11 @@ class LoggingSettings(BaseSettings):
     LEVEL: str = 'INFO'
     FORMAT: str = 'json'
 
-    class Config:
-        env_prefix = 'LOG_'
-        env_file = '.env'
-        env_file_encoding = 'utf-8'
+    model_config = SettingsConfigDict(
+        env_prefix = 'LOG_',
+        env_file = '.env',
+        env_file_encoding = 'utf-8',
+    )
 
 
 class Settings(BaseSettings):
@@ -68,10 +72,11 @@ class Settings(BaseSettings):
     database: DatabaseSettings = DatabaseSettings()
     logging: LoggingSettings = LoggingSettings()
 
-    class Config:
-        env_file = '.env'
-        env_file_encoding = 'utf-8'
-        case_sensitive = False
+    model_config = SettingsConfigDict(
+        env_file = '.env',
+        env_file_encoding = 'utf-8',
+        case_sensitive = False,
+    )
 
 
 settings = Settings()

@@ -9,6 +9,7 @@ class ShortURL(Base):
 
     __auto_timestamps__ = True
     __repr_attrs__ = ['short_code', 'clicks']
+    __mapper_args__ = {'confirm_deleted_rows': False}
 
     short_code: Mapped[str] = mapped_column(
         String(6), primary_key=True, nullable=False

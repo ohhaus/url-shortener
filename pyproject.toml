@@ -5,6 +5,7 @@ description = "URL shortener service"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "aiosqlite>=0.21.0",
     "alembic==1.12.1",
     "annotated-types==0.7.0",
     "anyio==3.7.1",
@@ -111,3 +112,22 @@ convention = "pep257"
 
 [tool.ruff.pycodestyle]
 max-doc-length = 95
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+    "slow: slow running tests",
+    "performance: performance tests", 
+    "security: security tests",
+    "load: load tests",
+    "integration: integration tests",
+]
+addopts = [
+    "--import-mode=importlib",
+    "-v",
+    "--strict-markers",
+    "--disable-warnings",
+    "-p no:warnings"
+]
