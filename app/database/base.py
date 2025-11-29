@@ -2,9 +2,7 @@ from datetime import datetime
 from typing import Any, ClassVar
 
 from sqlalchemy import inspect
-from sqlalchemy.orm import DeclarativeBase, declared_attr
-
-from app.database.utils import resolve_table_name
+from sqlalchemy.orm import DeclarativeBase
 
 
 class Base(DeclarativeBase):
@@ -13,9 +11,6 @@ class Base(DeclarativeBase):
     __repr_attrs__: ClassVar[list[str]] = []
     __repr_max_length__: ClassVar[int] = 25
 
-    @declared_attr.directive
-    def __tablename__(cls):
-        return resolve_table_name(cls.__name__)
 
     def __repr__(self) -> str:
         """Минималистичный repr для отладки."""
