@@ -3,7 +3,7 @@ import string
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.shortener.models import ShortURL
+from src.shortener.models import ShortURL
 
 
 class ShortURLFactory:

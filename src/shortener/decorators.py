@@ -3,7 +3,7 @@ from typing import Any, Callable
 
 from sqlalchemy.exc import IntegrityError
 
-from app.shortener.exceptions import ShortCodeAlreadyExists
+from src.shortener.exceptions import ShortCodeAlreadyExists
 
 
 def retry_on_integrity_error(

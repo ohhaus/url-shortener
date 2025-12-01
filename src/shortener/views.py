@@ -2,16 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.sessions import get_async_session
-from app.shortener.dependencies import get_short_url_by_code
-from app.shortener.exceptions import ShortCodeAlreadyExists
-from app.shortener.models import ShortURL
-from app.shortener.schemas import (
+from src.database.sessions import get_async_session
+from src.shortener.dependencies import get_short_url_by_code
+from src.shortener.exceptions import ShortCodeAlreadyExists
+from src.shortener.models import ShortURL
+from src.shortener.schemas import (
     ShortURLCreate,
     ShortURLDeleteResponse,
     ShortURLResponse,
 )
-from app.shortener.services import ShortURLService
+from src.shortener.services import ShortURLService
 
 
 router = APIRouter()
@@ -48,11 +48,19 @@ async def get_short_url_info(
     short_url: ShortURL = Depends(get_short_url_by_code),
 ):
     """Возвращает информацию о короткой ссылке."""
-    return ShortURLResponse.model_validate(short_url)
+    total_clicks = await ShortURLService.get_total_clicks(short_url)
+
+    response_data = {
+        'short_code': short_url.short_code,
+        'original_url': short_url.original_url,
+        'clicks': total_clicks,
+    }
+
+    return ShortURLResponse(**response_data)
 
 
 @router.delete('/{short_code}', response_model=ShortURLDeleteResponse)
-async def deactivate_short_url(
+async def delete_short_url(
     short_url: ShortURL = Depends(get_short_url_by_code),
     session: AsyncSession = Depends(get_async_session),
 ):

@@ -1,7 +1,7 @@
 import pytest
 
-from app.shortener.exceptions import ShortURLNotFound
-from app.shortener.services import ShortURLService
+from src.shortener.exceptions import ShortURLNotFound
+from src.shortener.services import ShortURLService
 
 
 class TestShortURLService:

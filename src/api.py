@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.shortener import shorten_router
+from src.shortener import shorten_router
 
 
 main_router = APIRouter()

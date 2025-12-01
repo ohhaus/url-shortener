@@ -14,10 +14,10 @@ from sqlalchemy.pool import StaticPool
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.config import settings
-from app.database.base import Base
-from app.database.sessions import get_async_session
-from app.main import app
+from src.config import settings
+from src.database.base import Base
+from src.database.sessions import get_async_session
+from src.main import app
 
 
 @pytest.fixture(scope="session")
