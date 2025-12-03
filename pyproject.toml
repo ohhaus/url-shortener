@@ -44,6 +44,7 @@ dependencies = [
     "python-socketio[asyncio_client]>=5.0.0",
     "geoip2>=4.0.0",
     "aiojobs>=1.0.0",
+    "arq>=0.26.3",
 ]
 
 [tool.ruff]

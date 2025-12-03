@@ -1,4 +1,4 @@
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,14 +15,15 @@ class DatabaseSettings(BaseSettings):
     ECHO_SQL: bool = False
 
     model_config = SettingsConfigDict(
-        env_prefix = 'DATABASE_',
-        env_file = '.env',
-        env_file_encoding = 'utf-8',
+        env_prefix='DATABASE_',
+        env_file='.env',
+        env_file_encoding='utf-8',
     )
 
 
 class RedisSettings(BaseSettings):
     """Настройка Redis."""
+
     URL: str = 'redis://localhost:6379/0'
     PASSWORD: str = 'password'
     SOCKET_CONNECT_TIMEOUT: int = 5
@@ -54,7 +55,7 @@ class ApplicationSettings(BaseSettings):
     MAX_REQUESTS: int = 1000
     MAX_REQUESTS_JITTER: int = 100
 
-    #SHORT_CODE
+    # SHORT_CODE
     BASE_URL: str = 'http://localhost:8000'
     SHORT_CODE_LENGTH: int = 6
     MAX_ATTEMPTS: int = 3
@@ -67,9 +68,9 @@ class ApplicationSettings(BaseSettings):
         return v
 
     model_config = SettingsConfigDict(
-        env_prefix = 'APP_',
-        env_file = '.env',
-        env_file_encoding = 'utf-8',
+        env_prefix='APP_',
+        env_file='.env',
+        env_file_encoding='utf-8',
     )
 
 
@@ -80,10 +81,26 @@ class LoggingSettings(BaseSettings):
     FORMAT: str = 'json'
 
     model_config = SettingsConfigDict(
-        env_prefix = 'LOG_',
-        env_file = '.env',
-        env_file_encoding = 'utf-8',
+        env_prefix='LOG_',
+        env_file='.env',
+        env_file_encoding='utf-8',
     )
+
+
+class WorkerSettings(BaseSettings):
+    """Настройки воркера."""
+
+    REDIS_DSN: str = Field(default='redis://:password@redis:6379/1')
+    QUEUE_NAME: str = Field(default='click_tasks')
+    MAX_JOBS: int = Field(default=10, ge=1)
+    JOB_TIMEOUT: int = Field(default=30, ge=10)
+    MAX_TRIES: int = Field(default=3, ge=1)
+
+    model_config = {
+        'env_prefix': 'WORKER_',
+        'env_file': '.env',
+        'env_file_encoding': 'utf-8',
+    }
 
 
 class Settings(BaseSettings):
@@ -93,11 +110,12 @@ class Settings(BaseSettings):
     database: DatabaseSettings = DatabaseSettings()
     redis: RedisSettings = RedisSettings()
     logging: LoggingSettings = LoggingSettings()
+    worker: WorkerSettings = WorkerSettings()
 
     model_config = SettingsConfigDict(
-        env_file = '.env',
-        env_file_encoding = 'utf-8',
-        case_sensitive = False,
+        env_file='.env',
+        env_file_encoding='utf-8',
+        case_sensitive=False,
     )
 
 

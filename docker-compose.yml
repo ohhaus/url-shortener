@@ -9,6 +9,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   
   redis:
     image: redis:7-alpine
@@ -18,12 +23,40 @@ services:
       - redis_data:/data
     command: redis-server --appendonly yes --requirepass "password"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "password", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
-    
-
+  
+  worker:
+    build: .
+    command: python -m src.worker.worker
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/postgres
+      - REDIS_URL=redis://:password@redis:6379/0
+      - WORKER_REDIS_DSN=redis://:password@redis:6379/1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  
+  app:
+    build: .
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/postgres
+      - REDIS_URL=redis://:password@redis:6379/0
+      - WORKER_REDIS_DSN=redis://:password@redis:6379/1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
 
 volumes:
   postgres_data:

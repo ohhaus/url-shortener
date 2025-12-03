@@ -10,6 +10,7 @@ from src.config import settings
 from src.shortener.decorators import retry_on_integrity_error
 from src.shortener.exceptions import ShortURLNotFound
 from src.shortener.models import ShortURL
+from src.worker.client import arq_client
 
 
 class ShortURLService:
@@ -19,7 +20,7 @@ class ShortURLService:
     @retry_on_integrity_error(max_attempts=settings.app.MAX_ATTEMPTS)
     async def create_short_url(session: AsyncSession, original_url: str) -> ShortURL:
         """Создает короткую ссылку."""
-        short_code = await ShortURLService._generate_unique_code(session)
+        short_code = await ShortURLService._generate_unique_code()
 
         short_url = ShortURL(
             original_url=str(original_url),
@@ -65,26 +66,16 @@ class ShortURLService:
         return result.scalar_one_or_none() is not None
 
     @staticmethod
-    async def _generate_unique_code(session: AsyncSession) -> str:
+    async def _generate_unique_code() -> str:
         """Генерирует уникальный короткий код."""
         alphabet = string.ascii_letters + string.digits
         return ''.join(secrets.choice(alphabet) for _ in range(settings.app.SHORT_CODE_LENGTH))
 
     @staticmethod
-    async def increment_clicks(session: AsyncSession, short_url: ShortURL) -> None:
+    async def increment_clicks(short_code: str) -> None:
         """Увеличивает счетчик кликов."""
-        # redis = await get_redis()
-        # cache_service = CacheService(redis)
+        return await arq_client.enqueue_click(short_code)
 
-        # await cache_service.increment_clicks(short_url.short_code)
-
-        short_url.clicks += 1
-        await session.commit()
-
-    @staticmethod
-    async def get_total_clicks(short_url: ShortURL) -> int:
-        """Получает общее количество кликов."""
-        return short_url.clicks
 
     @staticmethod
     async def delete_short_url(session: AsyncSession, short_url: ShortURL) -> None:

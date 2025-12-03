@@ -4,17 +4,22 @@ from fastapi import FastAPI
 
 from src.api import main_router
 from src.cache.redis import redis_manager
+from src.worker.client import arq_client
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await redis_manager.init()
+    await arq_client.connect()
+
     try:
         await redis_manager.get_client().ping()
         print('Redis connection established')
         yield
     finally:
+        await arq_client.close()
         await redis_manager.close()
+
 
 
 app = FastAPI(title='Shortener Service', lifespan=lifespan)
