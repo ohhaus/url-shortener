@@ -38,7 +38,7 @@ class ShortURLService:
         await session.commit()
         await session.refresh(short_url)
 
-        await cache.cache_redirect_url(short_code, original_url)
+        await cache.cache_redirect_url(short_code, str(original_url))
 
         logger.info('Short URL created', extra={'short_code': short_code})
         return short_url
