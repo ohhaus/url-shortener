@@ -39,7 +39,7 @@ async def redirect_to_original(
     session: AsyncSession = Depends(get_async_session),
 ):
     """Перенаправляет по короткой ссылке."""
-    await ShortURLService.increment_clicks(session, short_url)
+    await ShortURLService.increment_clicks(short_url.short_code)
     return RedirectResponse(url=short_url.original_url, status_code=status.HTTP_302_FOUND)
 
 
@@ -48,7 +48,7 @@ async def get_short_url_info(
     short_url: ShortURL = Depends(get_short_url_by_code),
 ):
     """Возвращает информацию о короткой ссылке."""
-    total_clicks = await ShortURLService.get_total_clicks(short_url)
+    total_clicks = short_url.clicks
 
     response_data = {
         'short_code': short_url.short_code,
