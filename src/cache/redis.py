@@ -1,42 +1,39 @@
+import logging
+
 from redis.asyncio import Redis
 
 from src.config import settings
 
 
+logger = logging.getLogger(__name__)
+
+
 class RedisManager:
-    """Менеджер для работы с Redis."""
 
     def __init__(self):
         self.redis: Redis | None = None
 
     async def init(self):
-        """Инициализация подключения к Redis."""
+        logger.info("Connecting to Redis...")
         self.redis = Redis.from_url(
             settings.redis.URL,
             password=settings.redis.PASSWORD,
-            socket_connect_timeout=settings.redis.SOCKET_CONNECT_TIMEOUT,
-            socket_timeout=settings.redis.SOCKET_TIMEOUT,
-            retry_on_timeout=settings.redis.RETRY_ON_TIMEOUT,
-            max_connections=settings.redis.MAX_CONNECTIONS,
             decode_responses=True,
+            max_connections=settings.redis.MAX_CONNECTIONS,
         )
-
         await self.redis.ping()
+        logger.info("Redis connected")
 
     async def close(self):
-        """Закрытие подключения."""
         if self.redis:
+            logger.info("Closing Redis...")
             await self.redis.close()
+            logger.info("Redis closed")
 
-    def get_client(self) -> Redis:
-        """Получение клиента Redis."""
+    def get(self) -> Redis:
         if not self.redis:
-            raise RuntimeError('Redis client not initialized')
+            raise RuntimeError("Redis not initialized")
         return self.redis
 
 
 redis_manager = RedisManager()
-
-
-async def get_redis() -> Redis:
-    return redis_manager.get_client()

@@ -1,10 +1,10 @@
+import logging
 import secrets
 import string
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.cache.redis import get_redis
 from src.cache.services import CacheService
 from src.config import settings
 from src.shortener.decorators import retry_on_integrity_error
@@ -13,13 +13,20 @@ from src.shortener.models import ShortURL
 from src.worker.client import arq_client
 
 
+logger = logging.getLogger(__name__)
+
+
 class ShortURLService:
     """Сервис для работы с короткими ссылками."""
 
     @staticmethod
     @retry_on_integrity_error(max_attempts=settings.app.MAX_ATTEMPTS)
-    async def create_short_url(session: AsyncSession, original_url: str) -> ShortURL:
+    async def create_short_url(
+        session: AsyncSession, cache: CacheService, original_url: str
+    ) -> ShortURL:
         """Создает короткую ссылку."""
+        logger.info('Creating short URL', extra={'original_url': original_url})
+
         short_code = await ShortURLService._generate_unique_code()
 
         short_url = ShortURL(
@@ -31,39 +38,36 @@ class ShortURLService:
         await session.commit()
         await session.refresh(short_url)
 
-        redis = await get_redis()
-        cache_service = CacheService(redis)
-        await cache_service.cache_redirect_url(short_code, str(original_url))
+        await cache.cache_redirect_url(short_code, original_url)
 
+        logger.info('Short URL created', extra={'short_code': short_code})
         return short_url
 
     @staticmethod
-    async def get_by_code(session: AsyncSession, short_code: str) -> ShortURL:
+    async def get_by_code(
+        session: AsyncSession, cache: CacheService, short_code: str
+    ) -> ShortURL:
         """Получает короткую ссылку по коду."""
-        redis = await get_redis()
-        cache_service = CacheService(redis)
+        logger.info('Fetching short URL', extra={ShortURL.short_code == short_code})
 
-        cached_url = await cache_service.get_cached_redirect_url(short_code)
-        if cached_url:
-            return ShortURL(short_code=short_code, original_url=cached_url, clicks=0)
+        cached_url = await cache.get_cached_redirect_url(short_code)
 
         result = await session.execute(
             select(ShortURL).where(ShortURL.short_code == short_code)
         )
-        short_url = result.scalar_one_or_none()
+        db_short_url = result.scalar_one_or_none()
 
-        if not short_url:
-            raise ShortURLNotFound(f'Short URL with code "{short_code}" not found')
+        if not db_short_url:
+            logger.warning('Short URL not found', extra={'short_code': short_code})
+            raise ShortURLNotFound(f'Short URL "{short_code}" not found')
+        if cached_url:
+            db_short_url.original_url = cached_url
+            logger.info('Using cached URL', extra={'short_code': short_code})
+        else:
+            await cache.cache_redirect_url(short_code, db_short_url.original_url)
+            logger.info('Cached URL from DB', extras={'short_code': short_code})
 
-        await cache_service.cache_redirect_url(short_code, short_url.original_url)
-
-        return short_url
-
-    @staticmethod
-    async def _is_code_exists(session: AsyncSession, code: str) -> bool:
-        """Проверяет, существует ли уже такой код."""
-        result = await session.execute(select(ShortURL).where(ShortURL.short_code == code))
-        return result.scalar_one_or_none() is not None
+        return db_short_url
 
     @staticmethod
     async def _generate_unique_code() -> str:
@@ -74,17 +78,15 @@ class ShortURLService:
     @staticmethod
     async def increment_clicks(short_code: str) -> None:
         """Увеличивает счетчик кликов."""
+        logger.debug('Queueing click increment', extra={'short_code': short_code})
         return await arq_client.enqueue_click(short_code)
 
-
     @staticmethod
-    async def delete_short_url(session: AsyncSession, short_url: ShortURL) -> None:
+    async def delete_short_url(
+        session: AsyncSession, cache: CacheService, short_url: ShortURL
+    ) -> None:
         """Удаляет короткую ссылку."""
-        redis = await get_redis()
-        cache_service = CacheService(redis)
-
-        await cache_service.delete_cached_redirect(short_url.short_code)
-        await cache_service.delete_cached_clicks(short_url.short_code)
+        await cache.delete_cached_redirect(short_url.short_code)
 
         await session.delete(short_url)
         await session.commit()
