@@ -4,8 +4,11 @@ from fastapi import FastAPI
 
 from src.api import main_router
 from src.cache.redis import redis_manager
+from src.logging import setup_logging
 from src.worker.client import arq_client
 
+
+logger = setup_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
