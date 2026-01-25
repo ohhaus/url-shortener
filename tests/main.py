@@ -24,3 +24,4 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Shortener Service", lifespan=lifespan)
 
 app.include_router(main_router)
+

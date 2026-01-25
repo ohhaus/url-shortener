@@ -16,4 +16,4 @@ def setup_logging():
         force=True,
     )
 
-    return logging.getLogger("shortener")
+    return logging.getLogger("app")

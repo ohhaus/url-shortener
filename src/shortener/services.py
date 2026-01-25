@@ -13,7 +13,7 @@ from src.shortener.models import ShortURL
 from src.worker.client import arq_client
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app")
 
 
 class ShortURLService:
@@ -48,7 +48,7 @@ class ShortURLService:
         session: AsyncSession, cache: CacheService, short_code: str
     ) -> ShortURL:
         """Получает короткую ссылку по коду."""
-        logger.info('Fetching short URL', extra={ShortURL.short_code == short_code})
+        logger.info('Fetching short URL', extra={'short_code': short_code})
 
         cached_url = await cache.get_cached_redirect_url(short_code)
 
@@ -65,7 +65,7 @@ class ShortURLService:
             logger.info('Using cached URL', extra={'short_code': short_code})
         else:
             await cache.cache_redirect_url(short_code, db_short_url.original_url)
-            logger.info('Cached URL from DB', extras={'short_code': short_code})
+            logger.info('Cached URL from DB', extra={'short_code': short_code})
 
         return db_short_url
 

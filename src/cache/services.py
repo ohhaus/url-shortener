@@ -6,7 +6,7 @@ from src.cache.keys import RedisKeys
 from src.config import settings
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("app")
 
 
 class CacheService:
