@@ -66,5 +66,5 @@ async def delete_short_url(
     cache=Depends(get_cache_service),
 ):
     """Удаляет короткую ссылку."""
-    await ShortURLService.delete_short_url(session, short_url)
+    await ShortURLService.delete_short_url(session, cache, short_url)
     return ShortURLDeleteResponse(short_code=short_url.short_code)
