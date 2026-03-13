@@ -45,6 +45,8 @@ dependencies = [
     "geoip2>=4.0.0",
     "aiojobs>=1.0.0",
     "arq>=0.26.3",
+    "fakeredis>=2.32.1",
+    "ruff>=0.14.8",
 ]
 
 [tool.ruff]
