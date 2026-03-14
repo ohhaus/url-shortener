@@ -1,16 +1,26 @@
 from sqlalchemy import inspect
 
 
-class TestDatabaseMigrations:
-    async def test_database_schema(self, db_session):
-        def check_schema(sync_session):
-            inspector = inspect(sync_session.get_bind())
+class TestDatabaseSchema:
+    async def test_short_url_table_exists(self, db_session):
+        def check(conn):
+            inspector = inspect(conn.get_bind())
+            assert 'short_url' in inspector.get_table_names()
 
-            tables = inspector.get_table_names()
-            assert "short_url" in tables
+        await db_session.run_sync(check)
 
-            columns = {col["name"] for col in inspector.get_columns("short_url")}
-            expected_columns = {"short_code", "original_url", "clicks"}
-            assert expected_columns.issubset(columns)
+    async def test_short_url_columns(self, db_session):
+        def check(conn):
+            inspector = inspect(conn.get_bind())
+            columns = {col['name'] for col in inspector.get_columns('short_url')}
+            assert {'short_code', 'original_url', 'clicks', 'created_at'}.issubset(columns)
 
-        await db_session.run_sync(check_schema)
+        await db_session.run_sync(check)
+
+    async def test_short_code_is_primary_key(self, db_session):
+        def check(conn):
+            inspector = inspect(conn.get_bind())
+            pk = inspector.get_pk_constraint('short_url')
+            assert 'short_code' in pk['constrained_columns']
+
+        await db_session.run_sync(check)

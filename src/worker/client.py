@@ -1,4 +1,4 @@
-from contextlib import asynccontextmanager
+import logging
 
 from arq import create_pool
 from arq.connections import RedisSettings
@@ -6,50 +6,44 @@ from arq.connections import RedisSettings
 from src.config import settings
 
 
-class ARQClient:
-    """Простой клиент для работы с ARQ."""
+logger = logging.getLogger('app')
 
-    def __init__(self):
+
+class ARQClient:
+    """Клиент для постановки задач в очередь ARQ."""
+
+    def __init__(self) -> None:
         self.pool = None
 
-    async def connect(self):
-        """Подключение к Redis для ARQ."""
-        try:
-            self.pool = await create_pool(RedisSettings.from_dsn(settings.worker.REDIS_DSN))
-            return True
-        except Exception as e:
-            print(f'Failed to connect to ARQ Redis: {e}')
-            return False
+    async def connect(self) -> None:
+        logger.info('Connecting to ARQ Redis...')
+        self.pool = await create_pool(RedisSettings.from_dsn(settings.worker.REDIS_DSN))
+        logger.info('ARQ Redis connected')
 
     async def enqueue_click(self, short_code: str) -> str | None:
-        """Добавляет задачу записи клика."""
+        """Ставит задачу записи клика в очередь."""
         if not self.pool:
-            success = await self.connect()
-            if not success:
-                return None
-
-        try:
-            job = await self.pool.enqueue_job('record_click', short_code)
-            return job.job_id if job else None
-        except Exception as e:
-            print(f'Failed to enqueue click: {e}')
+            logger.warning(
+                'ARQ pool not initialized, skipping click enqueue',
+                extra={'short_code': short_code},
+            )
             return None
 
-    async def close(self):
-        """Закрытие соединения."""
+        job = await self.pool.enqueue_job('record_click', short_code)
+        if job:
+            logger.debug(
+                'Click enqueued', extra={'short_code': short_code, 'job_id': job.job_id}
+            )
+            return job.job_id
+
+        logger.warning('Failed to enqueue click job', extra={'short_code': short_code})
+        return None
+
+    async def close(self) -> None:
         if self.pool:
+            logger.info('Closing ARQ Redis connection...')
             await self.pool.close()
+            logger.info('ARQ Redis closed')
 
 
 arq_client = ARQClient()
-
-
-@asynccontextmanager
-async def get_arq_client():
-    """Контекстный менеджер для ARQ клиента."""
-    client = ARQClient()
-    await client.connect()
-    try:
-        yield client
-    finally:
-        await client.close()

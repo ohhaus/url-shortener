@@ -10,26 +10,23 @@ class ShortURLFactory:
     @staticmethod
     async def create(
         session: AsyncSession,
-        short_code: str = None,
-        original_url: str = None,
+        short_code: str | None = None,
+        original_url: str | None = None,
         clicks: int = 0,
     ) -> ShortURL:
         if short_code is None:
             short_code = await ShortURLFactory._generate_unique_code(session)
-
         if original_url is None:
-            original_url = f"https://example-{random.randint(1000, 9999)}.com"
+            original_url = f'https://example-{random.randint(1000, 9999)}.com'
 
         short_url = ShortURL(
             short_code=short_code,
             original_url=original_url,
             clicks=clicks,
         )
-
         session.add(short_url)
         await session.commit()
         await session.refresh(short_url)
-
         return short_url
 
     @staticmethod
@@ -45,8 +42,8 @@ class ShortURLFactory:
 class URLDataFactory:
     @staticmethod
     def valid_url_data() -> dict:
-        return {"original_url": f"https://test-{random.randint(1000, 9999)}.com"}
+        return {'original_url': f'https://test-{random.randint(1000, 9999)}.com'}
 
     @staticmethod
     def invalid_url_data() -> dict:
-        return {"original_url": "not-a-valid-url"}
+        return {'original_url': 'not-a-valid-url'}
