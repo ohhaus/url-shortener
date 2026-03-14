@@ -8,23 +8,22 @@ from src.database.sessions import AsyncSessionLocal
 from src.shortener.models import ShortURL
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('app')
+
 
 async def record_click(ctx, short_code: str) -> bool:
-    logger.info(f'Recording click for short_code: {short_code}')
-    try:
-        async with AsyncSessionLocal() as session:
-            stmt = (
-                update(ShortURL)
-                .where(ShortURL.short_code == short_code)
-                .values(clicks=ShortURL.clicks + 1)
-            )
-            await session.execute(stmt)
-            await session.commit()
-        return True
-    except Exception as e:
-        logger.error(f'Failed to record click: {e}')
-        return False
+    logger.info('Recording click', extra={'short_code': short_code})
+    async with AsyncSessionLocal() as session:
+        stmt = (
+            update(ShortURL)
+            .where(ShortURL.short_code == short_code)
+            .values(clicks=ShortURL.clicks + 1)
+        )
+        await session.execute(stmt)
+        await session.commit()
+
+    logger.info('Click recorded', extra={'short_code': short_code})
+    return True
 
 
 class WorkerSettings:

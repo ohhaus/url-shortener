@@ -8,9 +8,10 @@ from src.shortener.exceptions import ShortCodeAlreadyExists
 
 def retry_on_integrity_error(
     max_attempts: int = 3,
-    exceptions: type[Exception] = IntegrityError
+    exceptions: type[Exception] = IntegrityError,
 ):
-    """Декоратор для повторных попыток генерации."""
+    """Декоратор для повторных попыток при коллизии генерации короткого кода."""
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
@@ -18,8 +19,13 @@ def retry_on_integrity_error(
                 try:
                     return await func(*args, **kwargs)
                 except exceptions as err:
+                    instance = args[0] if args else None
+                    if instance is not None and hasattr(instance, 'session'):
+                        await instance.session.rollback()
+
                     if attempt == max_attempts:
                         raise ShortCodeAlreadyExists from err
-            return None
+
         return wrapper
+
     return decorator
