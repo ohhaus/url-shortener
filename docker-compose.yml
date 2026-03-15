@@ -39,6 +39,20 @@ services:
     networks:
       - backend
 
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: alembic upgrade head
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: no
+
   app:
     build:
       context: .
@@ -62,6 +76,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - backend
     healthcheck:
@@ -84,22 +100,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - backend
-
-  migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: alembic upgrade head
-    env_file:
-      - .env
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - backend
-    restart: no
 
 networks:
   backend:

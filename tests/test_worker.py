@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.worker.client import ARQClient
@@ -70,6 +69,7 @@ class TestRecordClick:
 
     async def test_record_click_updates_counter(self, db_session, url_factory):
         from sqlalchemy import select
+
         from src.shortener.models import ShortURL
         from src.worker.tasks import record_click
 

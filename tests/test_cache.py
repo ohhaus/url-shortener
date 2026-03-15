@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from src.cache.keys import RedisKeys
 from src.cache.redis import RedisManager
@@ -63,7 +64,7 @@ class TestRedisManager:
         await manager.close()
 
     async def test_init_and_get(self):
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import patch
 
         mock_redis = AsyncMock()
         mock_redis.ping = AsyncMock()

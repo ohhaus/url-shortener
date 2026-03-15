@@ -11,25 +11,24 @@ dependencies = [
     "fastapi==0.104.1",
     "uvicorn[standard]==0.24.0",
     "gunicorn>=21.2.0",
-
+    "greenlet>=3.2.4",
     # Database
     "sqlalchemy==2.0.23",
     "alembic==1.12.1",
     "asyncpg>=0.30.0",
-
     # Cache / Queue
     "redis==5.0.1",
     "arq>=0.26.3",
-
     # Settings
     "pydantic==2.12.4",
     "pydantic-settings>=2.12.0",
     "python-dotenv>=1.0.0",
+    # Logs
+    "loguru>=0.7.2",
 ]
 
 [project.optional-dependencies]
 dev = [
-    # Testing
     "pytest>=7.4.3",
     "pytest-asyncio>=0.21.1",
     "pytest-cov>=4.1.0",
@@ -37,6 +36,9 @@ dev = [
     "aiosqlite>=0.21.0",
 ]
 
+# =============================================================================
+# RUFF
+# =============================================================================
 [tool.ruff]
 line-length = 95
 target-version = "py311"
@@ -46,7 +48,7 @@ exclude = [
     "__pycache__",
     "build",
     "dist",
-    "alembic/versions",
+    "src/database/revisions",
 ]
 
 [tool.ruff.lint]
@@ -89,6 +91,9 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
 
+# =============================================================================
+# PYTEST
+# =============================================================================
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 pythonpath = ["."]
@@ -105,22 +110,41 @@ addopts = [
     "--strict-markers",
     "--cov=src",
     "--cov-report=term-missing",
+    "--cov-report=html",
     "--cov-fail-under=90",
 ]
 
+# =============================================================================
+# COVERAGE
+# =============================================================================
 [tool.coverage.run]
 source = ["src"]
+branch = true
 omit = [
     "src/database/base.py",
     "src/database/engine.py",
+    "src/config.py",
 ]
 
 [tool.coverage.report]
+fail_under = 90
 show_missing = true
 skip_covered = false
+skip_empty = true
+precision = 2
 exclude_lines = [
     "pragma: no cover",
     "if TYPE_CHECKING:",
     "raise NotImplementedError",
     "@abstractmethod",
+    "\\.\\.\\.",
+    "pass",
 ]
+
+[tool.coverage.html]
+directory = "htmlcov"
+title = "URL Shortener — Coverage Report"
+show_contexts = true
+
+[tool.coverage.xml]
+output = "coverage.xml"

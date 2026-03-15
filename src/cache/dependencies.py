@@ -1,4 +1,3 @@
-from fastapi import Depends
 
 from src.cache.redis import redis_manager
 from src.cache.services import CacheService

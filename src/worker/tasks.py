@@ -1,6 +1,5 @@
-import logging
-
 from arq.connections import RedisSettings
+from loguru import logger
 from sqlalchemy import update
 
 from src.config import settings
@@ -8,11 +7,8 @@ from src.database.sessions import AsyncSessionLocal
 from src.shortener.models import ShortURL
 
 
-logger = logging.getLogger('app')
-
-
 async def record_click(ctx, short_code: str) -> bool:
-    logger.info('Recording click', extra={'short_code': short_code})
+    logger.info("Recording click", extra={"short_code": short_code})
     async with AsyncSessionLocal() as session:
         stmt = (
             update(ShortURL)
@@ -22,7 +18,7 @@ async def record_click(ctx, short_code: str) -> bool:
         await session.execute(stmt)
         await session.commit()
 
-    logger.info('Click recorded', extra={'short_code': short_code})
+    logger.info("Click recorded", extra={"short_code": short_code})
     return True
 
 

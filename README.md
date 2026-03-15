@@ -8,8 +8,20 @@
   ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
 ```
 
+<div align="center">
+
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?style=flat-square&logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis&logoColor=white)
+![Coverage](https://img.shields.io/badge/coverage-90.67%25-brightgreen?style=flat-square&logo=pytest)
+![Tests](https://img.shields.io/badge/tests-83%20passed-brightgreen?style=flat-square&logo=pytest)
+![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
+
+</div>
+
 > Высокопроизводительный асинхронный сервис сокращения URL  
-> на FastAPI + PostgreSQL + Redis + ARQ
+> FastAPI + PostgreSQL + Redis + ARQ + Loguru
 
 ---
 
@@ -20,52 +32,67 @@
 └───────────────────────────┬─────────────────────────────┘
                             │ HTTP
 ┌───────────────────────────▼─────────────────────────────┐
-│              FastAPI  (Gunicorn + Uvicorn)               │
+│         FastAPI  (Gunicorn + UvicornWorker)              │
 │                                                         │
 │  POST /             →  create short URL                 │
 │  GET  /{code}       →  redirect (cache-first)           │
 │  GET  /{code}/info  →  stats                            │
 │  DELETE /{code}     →  delete                           │
+│  GET  /health       →  health check                     │
 └───────┬─────────────────────────┬───────────────────────┘
         │                         │
 ┌───────▼───────┐       ┌─────────▼─────────┐
 │  PostgreSQL   │       │       Redis        │
 │               │       │                   │
 │  short_url    │       │  redirect:{code}  │  TTL 1h
-│  ┌──────────┐ │       │  clicks:{code}    │  TTL 5m
-│  │short_code│ │       │  rate_limit:{ip}  │  TTL 1m
-│  │orig_url  │ │       └─────────┬─────────┘
-│  │clicks    │ │                 │
-│  │created_at│ │       ┌─────────▼─────────┐
-│  └──────────┘ │       │    ARQ Worker      │
-└───────────────┘       │                   │
-                        │  record_click()   │
-                        │  max_tries=3      │
+│  ┌──────────┐ │       │  rate_limit:{ip}  │  TTL 1m
+│  │short_code│ │       └─────────┬─────────┘
+│  │orig_url  │ │                 │
+│  │clicks    │ │       ┌─────────▼─────────┐
+│  │created_at│ │       │    ARQ Worker      │
+│  └──────────┘ │       │  record_click()   │
+└───────────────┘       │  max_tries=3      │
                         └───────────────────┘
 ```
 
 ---
 
-## Quick Start (Docker)
+## Features
+
+| Feature | Description |
+|---|---|
+| 🔗 Сокращение URL | `POST /` → уникальный 6-символьный код |
+| ♻️ Дедупликация | `?deduplicate=true` — одна ссылка, один код |
+| ⚡ Cache-first редирект | Redis → DB только при cache miss |
+| 📊 Счётчик кликов | Асинхронно через ARQ worker |
+| 🛡️ Rate limiting | 60 POST / мин по IP через Redis |
+| 🔒 SSRF защита | Блокировка приватных IP-диапазонов |
+| ❤️ Health check | `GET /health` → статус DB + Redis |
+| 📋 Единые логи | Loguru — все сервисы в одном формате |
+| ♾️ Бессрочные ссылки | Ссылки не истекают |
+
+---
+
+## Quick Start
 ```bash
 # 1. Клонировать репозиторий
 git clone https://github.com/your-org/url-shortener
 cd url-shortener
 
-# 2. Создать .env
+# 2. Создать .env из примера
 cp .env.example .env
 
-# 3. Собрать образы
+# 3. Установить зависимости
+make install
+
+# 4. Собрать Docker образы
 make build
 
-# 4. Применить миграции
+# 5. Применить миграции
 make migrate
 
-# 5. Запустить все сервисы
+# 6. Запустить все сервисы
 make up
-
-# 6. Проверить статус
-docker compose ps
 
 # 7. Smoke test
 curl -X POST http://localhost:8000/ \
@@ -75,21 +102,19 @@ curl -X POST http://localhost:8000/ \
 
 ---
 
-## Development (локально)
+## Development
 ```bash
-# Установить зависимости
-pip install -e ".[dev]"
+# 1. Установить зависимости (включая dev)
+make install
 
-# Поднять только инфраструктуру
-make dev          # запускает db + redis + uvicorn --reload
+# 2. Поднять инфраструктуру + запустить приложение локально
+make dev
 
-# В отдельном терминале — воркер
+# 3. Воркер — в отдельном терминале
 make worker-dev
 
-# Создать миграцию
+# 4. Создать и применить миграцию
 make migrate-create m=add_user_table
-
-# Применить миграции
 make migrate
 ```
 
@@ -102,95 +127,86 @@ url-shortener/
 │   ├── main.py                  # entrypoint, lifespan
 │   ├── api.py                   # router registry
 │   ├── config.py                # pydantic settings
-│   ├── logging.py               # unified logging setup
+│   ├── logging.py               # loguru + InterceptHandler
+│   ├── health.py                # GET /health
+│   ├── middleware.py            # rate limit
 │   │
-│   ├── shortener/
-│   │   ├── __init__.py          # exports shorten_router
-│   │   ├── views.py             # HTTP handlers
-│   │   ├── services.py          # business logic
-│   │   ├── dependencies.py      # FastAPI DI
-│   │   ├── models.py            # SQLAlchemy ORM
-│   │   ├── schemas.py           # Pydantic I/O
-│   │   ├── exceptions.py        # domain exceptions
-│   │   └── decorators.py        # retry_on_integrity_error
+│   ├── shortener/               # core domain
+│   │   ├── views.py
+│   │   ├── services.py
+│   │   ├── dependencies.py
+│   │   ├── models.py
+│   │   ├── schemas.py           # + SSRF валидация
+│   │   ├── exceptions.py
+│   │   └── decorators.py
 │   │
-│   ├── cache/
-│   │   ├── redis.py             # RedisManager (singleton)
-│   │   ├── services.py          # CacheService
-│   │   ├── keys.py              # RedisKeys namespace
-│   │   └── dependencies.py      # get_cache_service
+│   ├── cache/                   # redis abstraction
+│   │   ├── redis.py
+│   │   ├── services.py
+│   │   ├── keys.py
+│   │   └── dependencies.py
 │   │
-│   ├── database/
-│   │   ├── base.py              # DeclarativeBase + created_at
-│   │   ├── engine.py            # async engine factory
-│   │   └── sessions.py          # AsyncSessionLocal, get_async_session
+│   ├── database/                # sqlalchemy + alembic
+│   │   ├── base.py
+│   │   ├── engine.py
+│   │   ├── sessions.py
+│   │   └── revisions/
 │   │
-│   └── worker/
-│       ├── client.py            # ARQClient
-│       ├── tasks.py             # record_click, WorkerSettings
-│       └── worker.py            # entrypoint
+│   └── worker/                  # arq async tasks
+│       ├── client.py
+│       ├── tasks.py
+│       └── worker.py
 │
 ├── tests/
-│   ├── conftest.py              # fixtures, overrides
+│   ├── conftest.py
 │   ├── utils/
-│   │   ├── factories.py         # ShortURLFactory
-│   │   └── mocks.py             # MockCacheService
-│   ├── test_shortener.py        # API integration tests
-│   ├── test_services.py         # service unit tests
-│   ├── test_cache.py            # cache unit tests
-│   ├── test_worker.py           # worker unit tests
-│   ├── test_decorators.py       # decorator unit tests
-│   ├── test_migrations.py       # schema tests
-│   └── test_security.py         # security tests
+│   │   ├── factories.py
+│   │   └── mocks.py
+│   ├── test_shortener.py
+│   ├── test_services.py
+│   ├── test_cache.py
+│   ├── test_worker.py
+│   ├── test_decorators.py
+│   ├── test_health.py
+│   ├── test_middleware.py
+│   ├── test_migrations.py
+│   ├── test_schemas.py
+│   └── test_security.py
 │
-├── alembic/
 ├── docker-compose.yml
 ├── Dockerfile
 ├── Makefile
-├── .coveragerc
 ├── .env.example
-├── pyproject.toml
-└── README.md
+└── pyproject.toml
 ```
 
 ---
 
 ## Make Commands
 ```
+Setup                       Database
+──────────────────────────  ──────────────────────────────────
+make install                make migrate
+                            make migrate-create m=name
 Infrastructure
-─────────────────────────────────────────
-make build          Build all images
-make up             Start all services
-make down           Stop all services
-make restart        Restart app + worker
-make logs           Follow logs (all)
-make logs-app       Follow app logs
-make logs-worker    Follow worker logs
-make shell          Shell inside app container
-
-Database
-─────────────────────────────────────────
-make migrate                Apply migrations
-make migrate-create m=name  Create new migration
-
-Development
-─────────────────────────────────────────
-make dev            Start infra + run app locally
-make worker-dev     Run worker locally
+──────────────────────────  Development
+make build                  ──────────────────────────────────
+make up                     make dev
+make down                   make worker-dev
+make restart
+make logs                   Cleanup
+make logs-app               ──────────────────────────────────
+make logs-worker            make clean
+make shell                  make prune
 
 Testing & Quality
-─────────────────────────────────────────
-make test           Run all tests
-make test-cov       Run tests with HTML coverage report
-make test-fast      Run tests, skip slow
-make lint           Run ruff lint
-make format         Run ruff format
-make check          lint + format check (CI)
-
-Cleanup
-─────────────────────────────────────────
-make clean          Remove .pyc / __pycache__
-make prune          Remove stopped containers + volumes
+──────────────────────────
+make test
+make test-cov
+make test-fast
+make lint
+make format
+make check
 ```
 
 ---
@@ -198,42 +214,27 @@ make prune          Remove stopped containers + volumes
 ## API Reference
 ```
 POST   /
-────────────────────────────────────────────────────────
-Body:    { "original_url": "https://example.com" }
-Returns: { "short_code": "aB3xYz", "original_url": "...", "clicks": 0 }
-Status:  201 Created
-         409 Conflict  — не удалось сгенерировать уникальный код
-         422            — невалидный URL
+  Query:   ?deduplicate=true (default) | false
+  Body:    { "original_url": "https://example.com" }
+  201:     { "short_code": "aB3xYz", "original_url": "...", "clicks": 0 }
+  409:     не удалось сгенерировать уникальный код
+  422:     невалидный URL / SSRF / запрещённая схема
 
 GET    /{short_code}
-────────────────────────────────────────────────────────
-Returns: 302 Redirect → original_url   (cache-first)
-         404 Not Found
+  302:     Redirect → original_url  (cache-first)
+  404:     Not Found
 
 GET    /{short_code}/info
-────────────────────────────────────────────────────────
-Returns: { "short_code": "aB3xYz", "original_url": "...", "clicks": 42 }
-Status:  200 OK
-         404 Not Found
+  200:     { "short_code": "aB3xYz", "original_url": "...", "clicks": 42 }
+  404:     Not Found
 
 DELETE /{short_code}
-────────────────────────────────────────────────────────
-Returns: { "status": "deleted", "short_code": "aB3xYz" }
-Status:  200 OK
-         404 Not Found
-```
+  200:     { "status": "deleted", "short_code": "aB3xYz" }
+  404:     Not Found
 
----
-
-## Configuration
-
-Все настройки через переменные окружения. Префиксы:
-```
-APP_*        →  ApplicationSettings
-DATABASE_*   →  DatabaseSettings
-REDIS_*      →  RedisSettings
-WORKER_*     →  WorkerSettings
-LOG_*        →  LoggingSettings
+GET    /health
+  200:     { "status": "ok",       "checks": { "database": "ok",          "redis": "ok"          } }
+  200:     { "status": "degraded", "checks": { "database": "unavailable", "redis": "unavailable" } }
 ```
 
 ---
@@ -265,46 +266,84 @@ Redis.get("redirect:{code}")
 
 ---
 
+## Security
+
+| Защита | Описание |
+|---|---|
+| SSRF | Блокировка `127.x`, `10.x`, `172.16.x`, `192.168.x`, `169.254.x` (AWS metadata), IPv6 private |
+| Rate Limit | 60 POST / мин по IP → `429`. Сбой Redis → fail open |
+| URL схема | Разрешены только `http` / `https`. `javascript:`, `data:`, `ftp:` → `422` |
+| Swagger | Отключён в продакшне (`APP_DEBUG=False`) |
+
+---
+
 ## Testing
 ```bash
-# Все тесты
-make test
-
-# С HTML отчётом покрытия
-make test-cov
-# → открыть htmlcov/index.html
-
-# Быстрый прогон (без slow/load)
-make test-fast
+make test          # все тесты
+make test-cov      # тесты + htmlcov/index.html
+make test-fast     # без slow/load маркеров
 ```
 
-Тесты используют SQLite in-memory — внешние зависимости не нужны.
-```
-tests/test_cache.py          ████████████  12 passed
-tests/test_decorators.py     ████████████   4 passed
-tests/test_migrations.py     ████████████   3 passed
-tests/test_security.py       ████████████   4 passed
-tests/test_services.py       ████████████  13 passed
-tests/test_shortener.py      ████████████  12 passed
-tests/test_worker.py         ████████████   8 passed
-─────────────────────────────────────────────────────
-TOTAL                                      56 passed
-```
+### Coverage — 91.95%
+
+| Module | Stmts | Cover |
+|---|---|---|
+| `src/api.py` | 6 | ![100%](https://img.shields.io/badge/-100%25-brightgreen?style=flat-square) |
+| `src/cache/keys.py` | 13 | ![100%](https://img.shields.io/badge/-100%25-brightgreen?style=flat-square) |
+| `src/cache/redis.py` | 18 | ![100%](https://img.shields.io/badge/-100%25-brightgreen?style=flat-square) |
+| `src/cache/services.py` | 17 | ![100%](https://img.shields.io/badge/-100%25-brightgreen?style=flat-square) |
+| `src/middleware.py` | 27 | ![100%](https://img.shields.io/badge/-100%25-brightgreen?style=flat-square) |
+| `src/shortener/services.py` | 65 | ![100%](https://img.shields.io/badge/-100%25-brightgreen?style=flat-square) |
+| `src/shortener/dependencies.py` | 15 | ![100%](https://img.shields.io/badge/-100%25-brightgreen?style=flat-square) |
+| `src/worker/client.py` | 25 | ![100%](https://img.shields.io/badge/-100%25-brightgreen?style=flat-square) |
+| `src/worker/tasks.py` | 20 | ![100%](https://img.shields.io/badge/-100%25-brightgreen?style=flat-square) |
+| `src/shortener/views.py` | 30 | ![93%](https://img.shields.io/badge/-93.33%25-green?style=flat-square) |
+| `src/shortener/schemas.py` | 39 | ![88%](https://img.shields.io/badge/-88.24%25-green?style=flat-square) |
+| `src/logging.py` | 32 | ![87%](https://img.shields.io/badge/-86.84%25-green?style=flat-square) |
+| `src/health.py` | 24 | ![83%](https://img.shields.io/badge/-83.33%25-yellow?style=flat-square) |
+| **TOTAL** | **415** | ![90.67%](https://img.shields.io/badge/-91.95%25-brightgreen?style=flat-square) |
+
+### Test Suites
+
+| Suite | Tests | Description |
+|---|---|---|
+| `test_shortener.py` | 12 | API integration — все эндпоинты |
+| `test_services.py` | 13 | Business logic, дедупликация, retry |
+| `test_cache.py` | 12 | RedisManager, CacheService, ключи |
+| `test_worker.py` | 8 | ARQClient, record_click |
+| `test_health.py` | 3 | Health check ok/degraded |
+| `test_middleware.py` | 4 | Rate limit, fail open |
+| `test_schemas.py` | 10 | SSRF валидация |
+| `test_security.py` | 6 | SSRF + XSS через API |
+| `test_decorators.py` | 4 | retry_on_integrity_error |
+| `test_migrations.py` | 3 | DB schema |
+| **Total** | **83** | **83 passed ✅** |
+
+---
+
+## Configuration
+
+| Prefix | Class | Description |
+|---|---|---|
+| `APP_*` | `ApplicationSettings` | Приложение |
+| `DATABASE_*` | `DatabaseSettings` | PostgreSQL |
+| `REDIS_*` | `RedisSettings` | Redis |
+| `WORKER_*` | `WorkerSettings` | ARQ Worker |
+| `LOG_*` | `LoggingSettings` | Loguru |
 
 ---
 
 ## Production Checklist
 ```
 [ ] Сменить все пароли из .env.example
-[ ] APP_ENVIRONMENT=production
-[ ] APP_DEBUG=False
-[ ] DATABASE_ECHO_SQL=False
-[ ] Настроить APP_BASE_URL под реальный домен
-[ ] Поставить reverse proxy (nginx / Caddy) перед app
-[ ] Настроить TLS
-[ ] Ограничить порты db и redis — не открывать наружу
-[ ] Настроить log aggregation (Loki / Datadog / ELK)
-[ ] Настроить алерты на worker queue lag
+[ ] APP_DEBUG=False           Swagger отключён
+[ ] DATABASE_ECHO_SQL=False   SQL не логируется
+[ ] APP_BASE_URL              Реальный домен
+[ ] Reverse proxy             nginx / Caddy перед app
+[ ] TLS                       HTTPS обязателен
+[ ] Закрыть порты             db и redis не наружу
+[ ] Log aggregation           Loki / Datadog / ELK
+[ ] Алерты                    Worker queue lag
 ```
 
 ---
