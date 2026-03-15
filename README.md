@@ -301,7 +301,7 @@ make test-fast     # без slow/load маркеров
 | `src/shortener/schemas.py` | 39 | ![88%](https://img.shields.io/badge/-88.24%25-green?style=flat-square) |
 | `src/logging.py` | 32 | ![87%](https://img.shields.io/badge/-86.84%25-green?style=flat-square) |
 | `src/health.py` | 24 | ![83%](https://img.shields.io/badge/-83.33%25-yellow?style=flat-square) |
-| **TOTAL** | **415** | ![90.67%](https://img.shields.io/badge/-91.95%25-brightgreen?style=flat-square) |
+| **TOTAL** | **415** | ![90.67%](https://img.shields.io/badge/-90.67%25-brightgreen?style=flat-square) |
 
 ### Test Suites
 
